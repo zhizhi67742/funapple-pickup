@@ -1,0 +1,7 @@
+import {canEdit,equalSecret,newSession,secret,sessionCookie,sameOrigin} from '../../editor-auth';
+export const dynamic='force-dynamic';
+const reply=(data:unknown,status=200,cookie?:string)=>Response.json(data,{status,headers:{'Cache-Control':'no-store',...(cookie?{'Set-Cookie':cookie}:{})}});
+const attempts=new Map<string,{count:number,until:number}>();
+export async function GET(req:Request){return reply({canEdit:await canEdit(req)})}
+export async function POST(req:Request){if(!sameOrigin(req))return reply({error:'來源不符'},403);if(!secret())return reply({error:'編輯密碼尚未設定'},503);const ip=req.headers.get('cf-connecting-ip')||'unknown';const now=Date.now();for(const [key,value] of attempts)if(value.until<=now)attempts.delete(key);const current=attempts.get(ip)||{count:0,until:now+60000};if(current.count>=5)return reply({error:'嘗試次數過多，請一分鐘後再試'},429);current.count++;attempts.set(ip,current);try{const raw=await req.text();if(raw.length>1024)return reply({error:'密碼錯誤'},401);const body=JSON.parse(raw);if(typeof body.password!=='string'||!await equalSecret(body.password,secret()))return reply({error:'密碼錯誤'},401);attempts.delete(ip);return reply({canEdit:true},200,`${sessionCookie}=${await newSession()}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=43200`)}catch{return reply({error:'資料格式錯誤'},400)}}
+export async function DELETE(req:Request){if(!sameOrigin(req))return reply({error:'來源不符'},403);return reply({canEdit:false},200,`${sessionCookie}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`)}
