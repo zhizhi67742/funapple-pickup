@@ -1,11 +1,7 @@
 # Fun Apple 接送名單
 
-所有人可查看；輸入共用編輯密碼後才能修改。不需 ChatGPT 登入。密碼只存於伺服器 secret PICKUP_EDIT_PASSWORD，沒有收錄於此儲存庫。登入 cookie 為 HttpOnly、Secure、SameSite，12 小時到期；每次修改由後端驗證並檢查版本衝突。
+完整操作介面由 GitHub Pages 提供，根目錄 index.html、app.js、sync.js、weekly.js 是上線檔案。名單與密碼驗證沿用既有 Sites 後端；不跳轉網站。
 
-支援 A4 週表、PNG 下載、同時間分組、車號底色、空白時段斜線。
+所有人可查看，輸入共用密碼才能編輯。密碼僅存伺服器 secret PICKUP_EDIT_PASSWORD；GitHub 不存密碼或正式資料庫。跨來源登入使用 12 小時簽章 token，只保留於目前分頁 sessionStorage。後端只允許本 GitHub Pages 來源與原站來源發出瀏覽器修改請求，並驗證每次寫入及版本衝突。
 
-## 開發與部署
-
-Node 22.13+，pnpm install、pnpm dev。後端使用 Cloudflare D1 binding DB，需套用 drizzle SQL，並設定 PICKUP_EDIT_PASSWORD secret。此儲存庫不包含正式資料庫、密碼或網站管理憑證。
-
-GitHub 修改不會自動更新現有網站。GitHub Pages 不能執行此後端，完整共編需部署至支援 Workers 與 D1 的主機。
+支援週表、PNG 圖片、A4 列印。前端變更推送 main 即由 Pages 發布；後端程式變更需另行部署至原 Sites。
