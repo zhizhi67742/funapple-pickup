@@ -29,10 +29,6 @@ ${savePNG.toString()}
 function fitPage(){const sheet=document.getElementById('sheet'),content=document.getElementById('pageContent');content.style.transform='none';const scale=Math.min(1,sheet.clientHeight/content.scrollHeight,sheet.clientWidth/content.scrollWidth);content.style.transform='scale('+scale+')';}
 window.addEventListener('load',fitPage);window.addEventListener('beforeprint',fitPage);if(document.fonts)document.fonts.ready.then(fitPage);
 </script></html>`}
-$('exportWeek').onclick=()=>{if(!cloudReady){$('status').textContent='請先完成雲端載入，再匯出週表。';return}const html=weeklyHTML($('date').value,db),url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download=`FunApple-接送週表-${weekDates($('date').value)[0]}.html`;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);$('status').textContent='已匯出整週總表，開啟下載檔即可查看、列印或另存 PDF。'};
-
-$('exportWeekPNG').onclick=()=>{if(!cloudReady){$('status').textContent='請先完成雲端載入';return}const frame=document.createElement('iframe');frame.style.cssText='position:fixed;left:-10000px;top:0;width:1200px;height:900px;border:0';frame.onload=async()=>{try{await frame.contentWindow.savePNG();$('status').textContent='已下載週表 PNG 圖片，可直接傳到群組。'}catch(e){$('status').textContent='圖片儲存失敗，請重新操作或先匯出總表再按儲存成圖片。'}finally{setTimeout(()=>frame.remove(),65000)}};frame.srcdoc=weeklyHTML($('date').value,db);document.body.appendChild(frame)};
-
 let weeklyPreviewTimer,weeklyPreviewSignature='';
 function refreshWeeklyPreview(){
  const panel=$('weeklyPreview');if(!panel.open)return;
