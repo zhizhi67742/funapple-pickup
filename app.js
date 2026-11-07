@@ -9,7 +9,20 @@ function normalize(t){
  if(parts.length&&parts.every(x=>/^.+[（(][^（）()]+[）)]$/.test(x))){let previous='';t.names=parts.map((x,i)=>{const m=x.match(/^(.+)[（(]([^（）()]+)[）)]$/),prefix=m[2]!==previous&&i?'，'+m[2]+'：':i?'、':'';previous=m[2];return prefix+m[1]}).join('')}
 }
 for(const group of [db.days,db.templates])for(const rows of Object.values(group))rows.forEach(normalize);
-$('date').value='2026-11-04';const names=t=>t.names.split(/[、，,\n]+/).map(s=>s.trim().replace(/^[^：:]+[：:]/,'').trim()).filter(Boolean),day=()=>db.days[$('date').value]||[];
+const taipeiDate = new Intl.DateTimeFormat('en', {
+ timeZone: 'Asia/Taipei',
+ year: 'numeric',
+ month: '2-digit',
+ day: '2-digit',
+});
+function today() {
+ const {year, month, day} = Object.fromEntries(
+  taipeiDate.formatToParts(new Date()).map(({type, value}) => [type, value])
+ );
+ return `${year}-${month}-${day}`;
+}
+$('date').value=today();
+const names=t=>t.names.split(/[、，,\n]+/).map(s=>s.trim().replace(/^[^：:]+[：:]/,'').trim()).filter(Boolean),day=()=>db.days[$('date').value]||[];
 function save(){queueMicrotask(()=>window.queueCloudSave?.());try{localStorage.setItem('funapple-pickup-cloud-cache',JSON.stringify(db));saveError=false;$('status').textContent='已儲存於此瀏覽器'}catch{saveError=true;$('status').textContent='儲存失敗，請立即下載備份。'}}
 function pickupPeriod(time){return !time?'時間待補':time>'14:00'?'下午接送':'中午接送'}
 function notification(){const date=$('date').value,[y,m,d]=date.split('-');let out=[`@All ${+m}/${+d}（${'日一二三四五六'[new Date(date+'T12:00:00').getDay()]}）接送`],last='',section='';let total=0;const seen=new Set(),duplicate=new Set();[...day()].sort((a,b)=>a.time.localeCompare(b.time)).forEach(t=>{const period=pickupPeriod(t.time);if(period!==section){out.push('',period+'：');section=period;last=null}if(t.time!==last){out.push('',`⏰ ${t.time||'時間待補'}${t.mode==='送回'?' 送回':' 出發'}`);last=t.time}const n=names(t);total+=n.length;n.forEach(x=>{if(seen.has(x))duplicate.add(x);seen.add(x)});out.push(`${t.school||'學校待補'}${n.length?` ${n.length}人`:''}${t.car?`（${t.car}）`:''} ${t.staff||'人員待補'}${t.mode==='送回'?'送回':''}${t.names.trim()?'：'+t.names.trim():t.school.trim()==='新光'?'':'：名單待補'}${t.note?'\n備註：'+t.note:''}`)});$('preview').value=out.join('\n');$('stats').textContent=`${day().length} 項安排 · 已列名 ${total} 人次（不含未列名接送）${duplicate.size?' ｜重複姓名請核對：'+[...duplicate].join('、'):''}`;}
@@ -18,6 +31,10 @@ $('cards').oninput=e=>{const {i,k}=e.target.dataset;if(k){day()[+i][k]=e.target.
 $('cards').onchange=e=>{if(e.target.dataset.staffAdd!==undefined&&e.target.value){const i=+e.target.dataset.staffAdd,t=day()[i],parts=t.staff.split(/[＋+、，,]+/).map(x=>x.trim()).filter(Boolean);if(!parts.includes(e.target.value))parts.push(e.target.value);t.staff=parts.join('＋');save();render()}};
 $('cards').onclick=e=>{if(e.target.dataset.remove!==undefined&&confirm('刪除此車次？')){day().splice(+e.target.dataset.remove,1);save();render()}};
 $('date').onchange=()=>{if(!$('date').value)return;$('status').textContent='';render()};
+$('today').onclick=()=>{
+ $('date').value=today();
+ $('date').onchange();
+};
 function shift(n){let d=new Date($('date').value+'T12:00:00');d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 $('prev').onclick=()=>{$('date').value=shift(-1);render()};$('next').onclick=()=>{$('date').value=shift(1);render()};
 function replace(rows){if(day().length&&!confirm('取代當天現有安排？'))return;db.days[$('date').value]=clone(rows);save();render()}
